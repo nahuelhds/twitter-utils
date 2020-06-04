@@ -1,8 +1,9 @@
-from time import sleep
-
+import csv
 import tweepy
+
 from dotenv import load_dotenv
 from os import environ
+from time import sleep
 
 load_dotenv()
 
@@ -21,12 +22,33 @@ class TwitterBot:
         # authorization from values inputted earlier, do not change.
         auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
         auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
-        self.api = tweepy.API(auth)
-        self.followers = self.api.followers_ids(ACCOUNT_SCREEN_NAME)
-        self.following = self.api.friends_ids(ACCOUNT_SCREEN_NAME)
-        self.MAX_UNFOLLOW = MAX_UNFOLLOW
+        self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
+    def make_unfollowers_list(self):
+        with open('unfollowers.csv', 'w', newline='') as csvfile:
+            fieldnames = ['profile_url', 'id_str', 'screen_name', 'name', 'description', 'location', 'url']
+            csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            csvwriter.writeheader()
+
+            followers_ids = self.api.followers_ids(ACCOUNT_SCREEN_NAME)
+            for following in tweepy.Cursor(self.api.friends, id=ACCOUNT_SCREEN_NAME).items():
+                if following.id not in followers_ids:
+                    csvline = {
+                        "profile_url": "https://twitter.com/%s" % following.screen_name,
+                        "id_str": following.id_str,
+                        "screen_name": following.screen_name,
+                        "name": following.name,
+                        "description": following.description,
+                        "location": following.location,
+                        "url": following.url,
+                    }
+                    print(csvline)
+                    csvwriter.writerow(csvline)
+
 
     def unfollow_back_who_not_folow_me(self):
+        self.followers = self.api.followers_ids(ACCOUNT_SCREEN_NAME)
+        self.following = self.api.friends_ids(ACCOUNT_SCREEN_NAME)
         # function to unfollow users that don't follow you back.
         print('Starting to unfollow users...')
         # makes a new list of users who don't follow you back.
@@ -54,4 +76,4 @@ class TwitterBot:
 
 if __name__ == '__main__':
     bot = TwitterBot()
-    bot.unfollow_back_who_not_folow_me()
+    bot.make_unfollowers_list()

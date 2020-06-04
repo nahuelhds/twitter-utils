@@ -3,4 +3,4 @@ venv
 .env
 assets
 model*
-**/*.csv
+data/*.csv
