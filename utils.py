@@ -42,10 +42,35 @@ user_props = [
     "translator_type",
 ]
 
-def extract_user_props(user, dict = {}):
+
+def extract_user_props(user, parsed_user={}):
     for prop in user_props:
         try:
-            dict[prop] = getattr(user, prop) or ''
+            parsed_user[prop] = getattr(user, prop) or ""
         except AttributeError:
             print("Could not read property %s from user" % prop)
-    return dict
+    return parsed_user
+
+
+got_props = [
+    "id",
+    "permalink",
+    "username",
+    "to",
+    "text",
+    "date",
+    "retweets",
+    "favorites",
+    "mentions",
+    "hashtags",
+    "geo",
+]
+
+
+def extract_got_props(tweet, parsed_tweet={}):
+    for prop in got_props:
+        try:
+            parsed_tweet[prop] = getattr(tweet, prop) or ""
+        except AttributeError:
+            print("Could not read property %s from tweet" % prop)
+    return parsed_tweet
