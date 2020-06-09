@@ -3,4 +3,5 @@ venv
 .env
 assets
 model*
-data/*.csv
+data/*
+*.egg-info
