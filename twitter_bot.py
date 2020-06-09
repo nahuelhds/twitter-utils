@@ -100,36 +100,47 @@ class TwitterBot:
                 print(following.screen_name)
                 csvwriter.writerow(csvline)
 
-    def unfollow_back(self, input):
+    def unfollow_back(self, input, max_unfollow=100):
         csvreader = csv.DictReader(input)
-        total_unfollowed = 0
+        unfollowed_count = 0
 
         api = self.get_api()
         for user in csvreader:
 
             if user["unfollow"]:
                 print("unfollowing %s" % user["screen_name"])
-                api.destroy_friendship(user["id_str"])
-                total_unfollowed += 1
-                if total_unfollowed % 10 == 0:
-                    print(str(total_unfollowed) + " unfollowed so far.")
+                try:
+                    api.destroy_friendship(user["id_str"])
+                except Exception as e:
+                    print(
+                        "Exiting because an unknown error ocrurred. Reason: %s" % str(e)
+                    )
+                    exit()
 
-                print("Unfollowed user. Sleeping 10 seconds.")
+                unfollowed_count += 1
+
+                if unfollowed_count % 10 == 0:
+                    print(str(unfollowed_count) + " unfollowed so far.")
+
+                if unfollowed_count == max_unfollow:
+                    print("unfollow %s users now. Exiting." % max_unfollow)
+                    exit()
+
+                print("Sleeping 10 seconds.")
                 sleep(10)
 
-    def auth(self):
-        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-        auth.secure = True
-        auth_url = auth.get_authorization_url()
-        input(
-            "Log in to https://twitter.com as the user you want to tweet as and hit enter."
-        )
-        input("Visit %s in your browser and hit enter." % auth_url)
-        pin = input("What is your PIN: ")
 
-        token = auth.get_access_token(verifier=pin)
-        print(
-            "\nThese are your access token and secret.\nDO NOT SHARE THEM WITH ANYONE!\n"
-        )
-        print("ACCESS_TOKEN\n%s\n" % token[0])
-        print("ACCESS_TOKEN_SECRET\n%s\n" % token[1])
+def auth(self):
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth.secure = True
+    auth_url = auth.get_authorization_url()
+    input(
+        "Log in to https://twitter.com as the user you want to tweet as and hit enter."
+    )
+    input("Visit %s in your browser and hit enter." % auth_url)
+    pin = input("What is your PIN: ")
+
+    token = auth.get_access_token(verifier=pin)
+    print("\nThese are your access token and secret.\nDO NOT SHARE THEM WITH ANYONE!\n")
+    print("ACCESS_TOKEN\n%s\n" % token[0])
+    print("ACCESS_TOKEN_SECRET\n%s\n" % token[1])
