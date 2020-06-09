@@ -34,6 +34,26 @@ def top(input, output):
 
 @cli.command()
 @click.argument("output", type=click.File("w"))
-def friends_list(output):
-    """Creates a file based on your friends"""
+def friends(output):
+    """Creates a friends list based on your friends"""
     bot.build_friends_list(output)
+
+
+@cli.command()
+@click.argument("output", type=click.File("w"))
+def unfollowers(output):
+    """Creates a unfollowers list based on your friends"""
+    bot.build_unfollowers_list(output)
+
+
+@cli.command()
+@click.argument("input", type=click.File("r"))
+def unfollow_back(input):
+    """Follows back based on the input file"""
+    bot.unfollow_back(input)
+
+
+@cli.command()
+def auth():
+    """Provides auth url for grant permissions for your account"""
+    bot.auth()
