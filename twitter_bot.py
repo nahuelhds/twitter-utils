@@ -16,7 +16,6 @@ ACCESS_TOKEN = environ["ACCESS_TOKEN"]
 ACCESS_TOKEN_SECRET = environ["ACCESS_TOKEN_SECRET"]
 CONSUMER_KEY = environ["CONSUMER_KEY"]
 CONSUMER_SECRET = environ["CONSUMER_SECRET"]
-
 ACCOUNT_SCREEN_NAME = environ["ACCOUNT_SCREEN_NAME"]
 
 
@@ -129,18 +128,19 @@ class TwitterBot:
                 print("Sleeping 10 seconds.")
                 sleep(10)
 
+    def auth(self):
+        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        auth.secure = True
+        auth_url = auth.get_authorization_url()
+        input(
+            "Log in to https://twitter.com as the user you want to tweet as and hit enter."
+        )
+        input("Visit %s in your browser and hit enter." % auth_url)
+        pin = input("What is your PIN: ")
 
-def auth(self):
-    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-    auth.secure = True
-    auth_url = auth.get_authorization_url()
-    input(
-        "Log in to https://twitter.com as the user you want to tweet as and hit enter."
-    )
-    input("Visit %s in your browser and hit enter." % auth_url)
-    pin = input("What is your PIN: ")
-
-    token = auth.get_access_token(verifier=pin)
-    print("\nThese are your access token and secret.\nDO NOT SHARE THEM WITH ANYONE!\n")
-    print("ACCESS_TOKEN\n%s\n" % token[0])
-    print("ACCESS_TOKEN_SECRET\n%s\n" % token[1])
+        token = auth.get_access_token(verifier=pin)
+        print(
+            "\nThese are your access token and secret.\nDO NOT SHARE THEM WITH ANYONE!\n"
+        )
+        print("ACCESS_TOKEN=%s\n" % token[0])
+        print("ACCESS_TOKEN_SECRET=%s\n" % token[1])
