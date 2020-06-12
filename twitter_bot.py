@@ -28,9 +28,24 @@ class TwitterBot:
         auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
         return tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-    def _lastSunday(self):
-        idx = (date.today().weekday() + 1) % 7
-        return date.today() - timedelta(7 + idx)
+    def allTweets(self, username):
+        criteria = (
+            got.manager.TweetCriteria()
+            .setUsername(username)
+            .setTopTweets(False)
+            .setEmoji("unicode")
+        )
+        return got.manager.TweetManager.getTweets(criteria)
+
+    def getTweets(self, since, until):
+        criteria = (
+            got.manager.TweetCriteria()
+            .setSince(since)
+            .setUntil(until)
+            .setUsername(ACCOUNT_SCREEN_NAME)
+            .setEmoji("unicode")
+        )
+        return got.manager.TweetManager.getTweets(criteria)
 
     def mostRetweetedFromLastWeek(
         self, term="", username=None, min_retweets=0, min_faves=0, near="", lang=""
@@ -56,6 +71,10 @@ class TwitterBot:
             criteria.setLang("es")
 
         return got.manager.TweetManager.getTweets(criteria)
+
+    def _lastSunday(self):
+        idx = (date.today().weekday() + 1) % 7
+        return date.today() - timedelta(7 + idx)
 
     def build_friends_list(self, output):
         fieldnames = user_props.copy()
