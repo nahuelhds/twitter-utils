@@ -1,5 +1,6 @@
 import csv
 
+import click
 import tweepy
 import GetOldTweets3 as got
 
@@ -28,53 +29,60 @@ class TwitterBot:
         auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
         return tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-    def allTweets(self, username):
+    def topTweets(self, usernames, since=None, until=None):
+        return self.buildCriteria(usernames, since, until, True)
+
+    def allTweets(self, usernames):
+        return self.buildCriteria(usernames)
+
+    def myTweets(self, since=None, until=None):
+        return self.buildCriteria(ACCOUNT_SCREEN_NAME, since, until)
+
+    def buildCriteria(self, usernames, since=None, until=None, topTweets=False):
         criteria = (
             got.manager.TweetCriteria()
-            .setUsername(username)
-            .setTopTweets(False)
+            .setUsername(usernames)
+            .setTopTweets(topTweets)
+            .setSince(since)
+            .setUntil(until)
             .setEmoji("unicode")
         )
         return got.manager.TweetManager.getTweets(criteria)
 
-    def getTweets(self, since, until):
+    def topMediaToday(
+        self,
+        query="",
+        usernames=None,
+        min_retweets=0,
+        min_faves=0,
+        near=None,
+        lang=None,
+    ):
+        fromUsernames = (
+            usernames if type(usernames) == "str" else " OR from:".join(usernames)
+        )
+        querysearch = (
+            "(from:%s) filter:media -filter:replies min_retweets:%s min_faves:%s %s"
+            % (fromUsernames, min_retweets, min_faves, query,)
+        )
+        since = "{:%Y-%m-%d}".format(date.today() - timedelta(days=1))
+
         criteria = (
             got.manager.TweetCriteria()
             .setSince(since)
-            .setUntil(until)
-            .setUsername(ACCOUNT_SCREEN_NAME)
-            .setEmoji("unicode")
-        )
-        return got.manager.TweetManager.getTweets(criteria)
-
-    def mostRetweetedFromLastWeek(
-        self, term="", username=None, min_retweets=0, min_faves=0, near="", lang=""
-    ):
-        criteria = (
-            got.manager.TweetCriteria()
-            .setQuerySearch(
-                "filter:media -filter:replies min_retweets:%s min_faves:%s %s"
-                % (min_retweets, min_faves, term)
-            )
-            .setSince("{:%Y-%m-%d}".format(self._lastSunday()))
+            .setQuerySearch(querysearch)
             .setTopTweets(True)
-            .setMaxTweets(100)
             .setEmoji("unicode")
         )
-        if username:
-            criteria.setUsername(username)
 
-        if near:
-            criteria.setNear(near)
-
-        if lang:
-            criteria.setLang("es")
+        click.echo("CRITERIA")
+        click.echo("usernames: %s" % usernames)
+        click.echo("querysearch: %s" % querysearch)
+        click.echo("since: %s" % since)
+        click.echo("near: %s" % near)
+        click.echo("lang: %s" % lang)
 
         return got.manager.TweetManager.getTweets(criteria)
-
-    def _lastSunday(self):
-        idx = (date.today().weekday() + 1) % 7
-        return date.today() - timedelta(7 + idx)
 
     def build_friends_list(self, output):
         fieldnames = user_props.copy()
