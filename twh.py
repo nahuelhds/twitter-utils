@@ -1,3 +1,6 @@
+import socketserver
+from http.server import HTTPServer, BaseHTTPRequestHandler, SimpleHTTPRequestHandler
+
 import click
 import csv
 import sys
@@ -7,6 +10,9 @@ from dotenv import load_dotenv
 from feedgen.entry import FeedEntry
 from feedgen.feed import FeedGenerator
 from os import environ
+
+from pyngrok import ngrok
+
 from twitter_bot import TwitterBot
 from utils import extract_got_props, got_props
 
@@ -100,6 +106,34 @@ def unfollow_back(input):
 def auth():
     """Provides auth url for grant permissions for your account"""
     bot.auth()
+
+
+@cli.command()
+def expose():
+    """Go live"""
+    port = 8443
+    public_url = ngrok.connect(port)
+    click.echo(public_url)
+    run_server(port)
+
+
+class MyHttpRequestHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/":
+            self.path = "/rss.xml"
+
+        if self.path == "/rss.xml" or self.path == "/atom.xml":
+            return SimpleHTTPRequestHandler.do_GET(self)
+
+        return None
+
+
+def run_server(port=8080):
+
+    # Create an object of the above class
+    with socketserver.TCPServer(("", port), MyHttpRequestHandler) as httpd:
+        print("serving at port", port)
+        httpd.serve_forever()
 
 
 @cli.command()
