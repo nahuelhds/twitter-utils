@@ -2,8 +2,15 @@ import click
 import csv
 import sys
 
+from dateutil.utils import today
+from dotenv import load_dotenv
+from feedgen.entry import FeedEntry
+from feedgen.feed import FeedGenerator
+from os import environ
 from twitter_bot import TwitterBot
 from utils import extract_got_props, got_props
+
+load_dotenv()
 
 bot = TwitterBot()
 
@@ -98,7 +105,51 @@ def auth():
 @cli.command()
 def tweets2feed():
     """Monitor best tweets from the defined accounts and generates an RSS/Atom feed"""
-    bot.myTweets()
+    with open("data/accounts.txt") as file:
+        accounts = file.read().splitlines()
+
+        feed = init_feed()
+
+        for tweet in bot.topMediaToday(usernames=accounts):
+            click.echo(
+                "%s = %s - rts: %s, favs: %s"
+                % (tweet.date, tweet.permalink, tweet.retweets, tweet.favorites,)
+            )
+            entry = feed.add_entry()
+            entry.id(tweet.id)
+            entry.title(tweet.text)
+            entry.description("")
+            entry.content("")
+            entry.link(href=tweet.permalink)
+            entry.updated(tweet.date)
+
+        feed.rss_file("rss.xml", pretty=True)
+        feed.rss_file("atom.xml", pretty=True)
+
+
+def init_feed():
+
+    id = environ["FEED_ID"]
+    title = environ["FEED_TITLE"]
+    subtitle = environ["FEED_SUBTITLE"]
+    language = environ["FEED_LANGUAGE"]
+    link = environ["FEED_LINK"]
+    link_alternate = environ["FEED_LINK_ALTERNATE"]
+    logo = environ["FEED_LOGO"]
+    author_name = environ["FEED_AUTHOR_NAME"]
+    author_email = environ["FEED_AUTHOR_EMAIL"]
+
+    fg = FeedGenerator()
+    fg.id(id)
+    fg.title(title)
+    fg.subtitle(subtitle)
+    fg.language(language)
+    fg.link(href=link, rel="self")
+    fg.link(href=link_alternate, rel="alternate")
+    fg.logo(logo)
+    fg.author({"name": author_name, "email": author_email})
+
+    return fg
 
 
 if __name__ == "__main__":

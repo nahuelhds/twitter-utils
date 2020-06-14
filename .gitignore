@@ -6,3 +6,6 @@ venv
 assets
 data/*
 .env
+
+atom.xml
+rss.xml
