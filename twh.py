@@ -1,18 +1,13 @@
-import socketserver
-from http.server import HTTPServer, BaseHTTPRequestHandler, SimpleHTTPRequestHandler
-
 import click
 import csv
+import socketserver
 import sys
 
-from dateutil.utils import today
 from dotenv import load_dotenv
-from feedgen.entry import FeedEntry
 from feedgen.feed import FeedGenerator
+from http.server import SimpleHTTPRequestHandler
 from os import environ
-
 from pyngrok import ngrok
-
 from twitter_bot import TwitterBot
 from utils import extract_got_props, got_props
 

@@ -1,5 +1,5 @@
 import csv
-
+import logging
 import click
 import tweepy
 import GetOldTweets3 as got
@@ -11,6 +11,18 @@ from time import sleep
 from utils import user_props, extract_user_props
 
 load_dotenv()
+
+# create logger
+formatter = logging.Formatter("%(levelname)s - %(asctime)s - %(name)s - %(message)s")
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(formatter)
+
+logger = logging.getLogger("twitter-helper")
+logger.setLevel(logging.INFO)
+logger.addHandler(ch)
 
 # store Twitter specific credentials
 ACCESS_TOKEN = environ["ACCESS_TOKEN"]
@@ -40,13 +52,18 @@ class TwitterBot:
 
     def buildCriteria(self, usernames, since=None, until=None, topTweets=False):
         criteria = (
-            got.manager.TweetCriteria()
-            .setUsername(usernames)
-            .setTopTweets(topTweets)
-            .setSince(since)
-            .setUntil(until)
-            .setEmoji("unicode")
+            got.manager.TweetCriteria().setUsername(usernames).setEmoji("unicode")
         )
+
+        if since:
+            criteria.setSince(since)
+
+        if until:
+            criteria.setUntil(until)
+
+        if topTweets:
+            criteria.setTopTweets(topTweets)
+
         return got.manager.TweetManager.getTweets(criteria)
 
     def topMediaToday(
@@ -126,34 +143,37 @@ class TwitterBot:
                 print(following.screen_name)
                 csvwriter.writerow(csvline)
 
-    def unfollow_back(self, input, max_unfollow=100):
+    def unfollow_back(self, input, max_unfollow_per_cycle=100):
         csvreader = csv.DictReader(input)
         unfollowed_count = 0
 
         api = self.get_api()
         for user in csvreader:
 
-            if user["unfollow"]:
-                print("unfollowing %s" % user["screen_name"])
+            if user.get("unfollow", True):
+                logger.info("unfollowing %s" % user["screen_name"])
                 try:
                     api.destroy_friendship(user["id_str"])
                 except Exception as e:
-                    print(
-                        "Exiting because an unknown error ocrurred. Reason: %s" % str(e)
+                    logger.error(
+                        "Exiting because an unknown error ocurred. Reason: %s" % str(e)
                     )
                     exit()
 
                 unfollowed_count += 1
 
                 if unfollowed_count % 10 == 0:
-                    print(str(unfollowed_count) + " unfollowed so far.")
+                    logger.debug(str(unfollowed_count) + " unfollowed so far.")
 
-                if unfollowed_count == max_unfollow:
-                    print("unfollow %s users now. Exiting." % max_unfollow)
-                    exit()
-
-                print("Sleeping 10 seconds.")
-                sleep(10)
+                if unfollowed_count % max_unfollow_per_cycle != 0:
+                    logger.debug("Sleeping 10 seconds.")
+                    sleep(6)
+                else:
+                    logger.info(
+                        "unfollow %s users now. Waiting 15 minutes before continue."
+                        % max_unfollow_per_cycle
+                    )
+                    sleep(60 * 5)
 
     def auth(self):
         auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
